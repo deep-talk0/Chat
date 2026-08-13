@@ -336,10 +336,12 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                     .onAppear(perform: showMessageMenu)
             }
         }
-        .onPreferenceChange(MessageMenuPreferenceKey.self) { frames in
-            DispatchQueue.main.async {
-                if self.cellFrames != frames {
-                    self.cellFrames = frames
+        .applyIf(chatCustomizationParameters.showMessageMenuOnLongPress) {
+            $0.onPreferenceChange(MessageMenuPreferenceKey.self) { frames in
+                DispatchQueue.main.async {
+                    if self.cellFrames != frames {
+                        self.cellFrames = frames
+                    }
                 }
             }
         }

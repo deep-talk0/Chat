@@ -670,7 +670,12 @@ struct UIList<MessageContent: View>: UIViewRepresentable {
                     messageParams: messageParams,
                     isDisplayingMessageMenu: false
                 )
-                .background(MessageMenuPreferenceViewSetter(id: row.id))
+                // Message frames are used exclusively to place the long-press menu. Measuring every
+                // visible cell in global coordinates while the menu is disabled publishes a new
+                // preference dictionary on every scroll frame and needlessly invalidates ChatView.
+                .applyIf(chatParams.showMessageMenuOnLongPress) {
+                    $0.background(MessageMenuPreferenceViewSetter(id: row.id))
+                }
                 .rotationEffect(Angle(degrees: (type == .conversation ? 180 : 0)))
                 .applyIf(chatParams.showMessageMenuOnLongPress) {
                     $0.simultaneousGesture(
