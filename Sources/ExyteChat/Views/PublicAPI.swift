@@ -126,6 +126,14 @@ public extension ChatView {
         return view
     }
 
+    /// Sets how long a message must be held before its menu opens.
+    /// - Important: This value is clamped between 0.1 and 1.0 seconds.
+    func messageMenuLongPressMinimumDuration(_ duration: Double) -> ChatView {
+        var view = self
+        view.chatCustomizationParameters.messageMenuLongPressMinimumDuration = max(0.1, min(1.0, duration))
+        return view
+    }
+
     func contentInsets(top: CGFloat = 0, bottom: CGFloat = 0, left: CGFloat = 0, right: CGFloat = 0) -> ChatView {
         var view = self
         if type == .conversation {

@@ -681,7 +681,9 @@ struct UIList<MessageContent: View>: UIViewRepresentable {
                     $0.simultaneousGesture(
                         TapGesture().onEnded { } // add empty tap to prevent iOS17 scroll breaking bug (drag on cells stops working)
                     )
-                    .onLongPressGesture {
+                    .onLongPressGesture(
+                        minimumDuration: chatParams.messageMenuLongPressMinimumDuration
+                    ) {
                         // Trigger haptic feedback
                         self.impactGenerator.impactOccurred()
                         // Launch the message menu

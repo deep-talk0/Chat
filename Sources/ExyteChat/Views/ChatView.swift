@@ -10,6 +10,13 @@ import PhotosUI
 import GiphyUISDK
 import ExyteMediaPicker
 
+/// Message frames change continuously while the table scrolls. They are lookup data for a menu
+/// presentation, not render state, so keeping them outside `@State` prevents a full ChatView
+/// invalidation on every scroll frame.
+private final class MessageMenuFrameStore: ObservableObject {
+    var frames = [String: CGRect]()
+}
+
 public typealias MediaPickerLiveCameraStyle = LiveCameraCellStyle
 public typealias MediaPickerSelectionParameters = SelectionParameters // showFullscreenPreview doesn't work with the system picker
 
@@ -95,7 +102,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     @State private var isScrolledToBottom: Bool = true
     @State private var tableContentHeight: CGFloat = 0
 
-    @State private var cellFrames = [String: CGRect]()
+    @StateObject private var messageMenuFrameStore = MessageMenuFrameStore()
     /// Used to prevent the MainView from responding to keyboard changes while the Menu is active
     @State private var isShowingMenu = false
 
@@ -339,8 +346,8 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
         .applyIf(chatCustomizationParameters.showMessageMenuOnLongPress) {
             $0.onPreferenceChange(MessageMenuPreferenceKey.self) { frames in
                 DispatchQueue.main.async {
-                    if self.cellFrames != frames {
-                        self.cellFrames = frames
+                    if self.messageMenuFrameStore.frames != frames {
+                        self.messageMenuFrameStore.frames = frames
                     }
                 }
             }
@@ -410,7 +417,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     }
     
     func messageMenu(_ row: MessageRow) -> some View {
-        let cellFrame = cellFrames[row.id] ?? .zero
+        let cellFrame = messageMenuFrameStore.frames[row.id] ?? .zero
 
         return MessageMenu(
             viewModel: viewModel,
