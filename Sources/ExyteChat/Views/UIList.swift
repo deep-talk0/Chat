@@ -683,9 +683,14 @@ struct UIList<MessageContent: View>: UIViewRepresentable {
                     )
                     .onLongPressGesture(
                         minimumDuration: chatParams.messageMenuLongPressMinimumDuration
-                    ) {
+                    ) { [weak tableViewCell] in
+                        guard let tableViewCell else { return }
                         // Trigger haptic feedback
                         self.impactGenerator.impactOccurred()
+                        // Capture only the visible portion. Re-rendering a multi-screen custom
+                        // Markdown message in MessageMenu stalls the main thread and pushes its
+                        // actions below the viewport.
+                        self.captureMessageMenuSnapshot(for: tableViewCell)
                         // Launch the message menu
                         self.viewModel.messageMenuRow = row
                     }
@@ -695,6 +700,48 @@ struct UIList<MessageContent: View>: UIViewRepresentable {
             .margins(.all, 0)
 
             return tableViewCell
+        }
+
+        /// Captures the row exactly as the user sees it, capped so actions always fit on screen.
+        /// Rendering the window into a small crop preserves transforms used by the inverted table
+        /// and avoids constructing the custom message builder a second time.
+        private func captureMessageMenuSnapshot(for cell: UITableViewCell) {
+            guard let window = cell.window else {
+                viewModel.messageMenuSnapshot = nil
+                viewModel.messageMenuSnapshotFrame = .zero
+                return
+            }
+
+            let cellFrame = cell.convert(cell.bounds, to: window)
+            let safeFrame = window.bounds
+                .inset(by: window.safeAreaInsets)
+                .insetBy(dx: 0, dy: 8)
+            var crop = cellFrame.intersection(safeFrame)
+            guard !crop.isNull, crop.width > 0, crop.height > 0 else {
+                viewModel.messageMenuSnapshot = nil
+                viewModel.messageMenuSnapshotFrame = .zero
+                return
+            }
+
+            let maximumPreviewHeight = min(260, safeFrame.height * 0.42)
+            if crop.height > maximumPreviewHeight {
+                let centeredY = crop.midY - maximumPreviewHeight / 2
+                crop.origin.y = max(
+                    safeFrame.minY,
+                    min(centeredY, safeFrame.maxY - maximumPreviewHeight)
+                )
+                crop.size.height = maximumPreviewHeight
+            }
+
+            let format = UIGraphicsImageRendererFormat.default()
+            format.scale = window.screen.scale
+            format.opaque = false
+            let renderer = UIGraphicsImageRenderer(size: crop.size, format: format)
+            viewModel.messageMenuSnapshot = renderer.image { context in
+                context.cgContext.translateBy(x: -crop.minX, y: -crop.minY)
+                window.layer.render(in: context.cgContext)
+            }
+            viewModel.messageMenuSnapshotFrame = crop
         }
 
         func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {

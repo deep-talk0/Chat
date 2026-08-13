@@ -17,6 +17,14 @@ final class ChatViewModel: ObservableObject {
     @Published private(set) var isPreparingAttachmentsShare = false
 
     @Published var messageMenuRow: MessageRow?
+
+    /// A screen-accurate, viewport-bounded snapshot captured when the long press succeeds. Custom
+    /// message builders can contain very long Markdown/cards; rebuilding that entire SwiftUI tree
+    /// inside the menu is both slow and places actions below the screen. These are deliberately not
+    /// published: they are assigned immediately before `messageMenuRow`, whose publish presents the
+    /// menu and reads the completed snapshot atomically.
+    var messageMenuSnapshot: UIImage?
+    var messageMenuSnapshotFrame: CGRect = .zero
     
     /// The messages frame that is currently being rendered in the Message Menu
     /// - Note: Used to further refine a messages frame (instead of using the cell boundary), mainly used for positioning reactions

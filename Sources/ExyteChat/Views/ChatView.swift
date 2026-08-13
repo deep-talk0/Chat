@@ -417,7 +417,10 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     }
     
     func messageMenu(_ row: MessageRow) -> some View {
-        let cellFrame = messageMenuFrameStore.frames[row.id] ?? .zero
+        let capturedFrame = viewModel.messageMenuSnapshotFrame
+        let cellFrame = capturedFrame == .zero
+            ? (messageMenuFrameStore.frames[row.id] ?? .zero)
+            : capturedFrame
 
         return MessageMenu(
             viewModel: viewModel,
@@ -438,14 +441,22 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
             deleteClosure: deleteMenuActionClosure,
             deleteActiveFor: deleteMenuActionActiveFor
         ) {
-            ChatMessageView(
-                viewModel: viewModel,
-                messageBuilder: messageBuilder,
-                row: row,
-                chatType: type,
-                messageParams: messageCustomizationParameters,
-                isDisplayingMessageMenu: true
-            )
+            Group {
+                if let snapshot = viewModel.messageMenuSnapshot {
+                    Image(uiImage: snapshot)
+                        .resizable()
+                        .frame(width: cellFrame.width, height: cellFrame.height)
+                } else {
+                    ChatMessageView(
+                        viewModel: viewModel,
+                        messageBuilder: messageBuilder,
+                        row: row,
+                        chatType: type,
+                        messageParams: messageCustomizationParameters,
+                        isDisplayingMessageMenu: true
+                    )
+                }
+            }
             .onTapGesture {
                 hideMessageMenu()
             }
@@ -489,6 +500,8 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
     func hideMessageMenu() {
         viewModel.messageMenuRow = nil
         viewModel.messageFrame = .zero
+        viewModel.messageMenuSnapshot = nil
+        viewModel.messageMenuSnapshotFrame = .zero
         isShowingMenu = false
     }
     

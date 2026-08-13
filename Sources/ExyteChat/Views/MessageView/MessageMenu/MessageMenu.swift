@@ -265,7 +265,6 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
             /// If we have a detailed message frame stored in the viewModel use it, otherwise fall back to the cell's frame
             /// - Note: this optional message frame allows us to place the reaction at the correct spot on the message (top left / right corner)
             if viewModel.messageFrame == .zero {
-                print("WARNING::ViewModel.MessageFrame not set")
                 viewModel.messageFrame = cellFrame
             }
             
