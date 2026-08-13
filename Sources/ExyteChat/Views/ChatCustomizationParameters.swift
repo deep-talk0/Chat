@@ -20,7 +20,7 @@ struct ChatCustomizationParameters {
     var showLastReadIndicator: Bool = false
     var keyboardDismissMode: UIScrollView.KeyboardDismissMode = .none
     var messageMenuAnimationDuration: CGFloat = 0.3
-    var messageMenuLongPressMinimumDuration: Double = 0.22
+    var messageMenuLongPressMinimumDuration: Double = 0.18
     var contentInsets: UIEdgeInsets = .zero
 
     var scrollToParams: ScrollToParams?

@@ -23,7 +23,7 @@ final class ChatViewModel: ObservableObject {
     /// inside the menu is both slow and places actions below the screen. These are deliberately not
     /// published: they are assigned immediately before `messageMenuRow`, whose publish presents the
     /// menu and reads the completed snapshot atomically.
-    var messageMenuSnapshot: UIImage?
+    var messageMenuSnapshot: UIView?
     var messageMenuSnapshotFrame: CGRect = .zero
     
     /// The messages frame that is currently being rendered in the Message Menu

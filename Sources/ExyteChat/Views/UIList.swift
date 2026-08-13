@@ -703,8 +703,9 @@ struct UIList<MessageContent: View>: UIViewRepresentable {
         }
 
         /// Captures the row exactly as the user sees it, capped so actions always fit on screen.
-        /// Rendering the window into a small crop preserves transforms used by the inverted table
-        /// and avoids constructing the custom message builder a second time.
+        /// `snapshotView` reuses the compositor's current surface and returns immediately. Do not
+        /// replace it with layer.render/drawHierarchy: a long custom Markdown cell can make those
+        /// synchronous drawing paths block the main thread for seconds after recognition succeeds.
         private func captureMessageMenuSnapshot(for cell: UITableViewCell) {
             guard let window = cell.window else {
                 viewModel.messageMenuSnapshot = nil
@@ -733,14 +734,17 @@ struct UIList<MessageContent: View>: UIViewRepresentable {
                 crop.size.height = maximumPreviewHeight
             }
 
-            let format = UIGraphicsImageRendererFormat.default()
-            format.scale = window.screen.scale
-            format.opaque = false
-            let renderer = UIGraphicsImageRenderer(size: crop.size, format: format)
-            viewModel.messageMenuSnapshot = renderer.image { context in
-                context.cgContext.translateBy(x: -crop.minX, y: -crop.minY)
-                window.layer.render(in: context.cgContext)
+            let clipped = UIView(frame: CGRect(origin: .zero, size: crop.size))
+            clipped.backgroundColor = .clear
+            clipped.clipsToBounds = true
+            if let surface = window.snapshotView(afterScreenUpdates: false) {
+                surface.frame = window.bounds.offsetBy(dx: -crop.minX, dy: -crop.minY)
+                clipped.addSubview(surface)
+            } else if let surface = cell.snapshotView(afterScreenUpdates: false) {
+                surface.frame = cellFrame.offsetBy(dx: -crop.minX, dy: -crop.minY)
+                clipped.addSubview(surface)
             }
+            viewModel.messageMenuSnapshot = clipped
             viewModel.messageMenuSnapshotFrame = crop
         }
 

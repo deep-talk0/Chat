@@ -443,8 +443,7 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
         ) {
             Group {
                 if let snapshot = viewModel.messageMenuSnapshot {
-                    Image(uiImage: snapshot)
-                        .resizable()
+                    MessageMenuSnapshotView(snapshot: snapshot)
                         .frame(width: cellFrame.width, height: cellFrame.height)
                 } else {
                     ChatMessageView(
@@ -461,6 +460,13 @@ public struct ChatView<MessageContent: View, InputViewContent: View, MenuAction:
                 hideMessageMenu()
             }
         }
+    }
+
+    private struct MessageMenuSnapshotView: UIViewRepresentable {
+        let snapshot: UIView
+
+        func makeUIView(context: Context) -> UIView { snapshot }
+        func updateUIView(_ uiView: UIView, context: Context) {}
     }
     
     /// Determines the message menu alignment based on ChatType and message sender.
