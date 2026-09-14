@@ -158,23 +158,27 @@ struct UIList<MessageContent: View>: UIViewRepresentable {
         guard type == .conversation else { return tableView.contentOffset == .zero }
         let distance = tableView.contentOffset.y + tableView.adjustedContentInset.top
         if distance <= 1 { return true }
-        return distance <= chatParams.followNewestThreshold
+        let limit = max(
+            chatParams.followNewestThreshold,
+            chatParams.followNewestScreens * tableView.bounds.height
+        )
+        return distance <= limit
             && !tableView.isDragging
             && !tableView.isDecelerating
     }
 
-    /// Close the small gap to the newest edge first, so the insert that follows animates in place.
+    /// Scroll back to the newest edge first, so the insert that follows animates in place.
+    /// Uses the scroll view's own animated scroll (not `UIView.animate` on the offset): the gap can be
+    /// a couple of screens, and only the scroll view's animation lays out the rows it passes.
     @MainActor
     private func slideToNewestEdge(_ tableView: UITableView) async {
         guard type == .conversation else { return }
         let edge = -tableView.adjustedContentInset.top
         guard tableView.contentOffset.y > edge + 1 else { return }
-        await withCheckedContinuation { continuation in
-            UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseOut, .allowUserInteraction]) {
-                tableView.setContentOffset(CGPoint(x: 0, y: edge), animated: false)
-            } completion: { _ in
-                continuation.resume()
-            }
+        tableView.setContentOffset(CGPoint(x: 0, y: edge), animated: true)
+        let deadline = Date().addingTimeInterval(0.6)
+        while tableView.contentOffset.y > edge + 1, Date() < deadline, !tableView.isDragging {
+            try? await Task.sleep(nanoseconds: 16_000_000)
         }
     }
 

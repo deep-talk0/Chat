@@ -23,6 +23,7 @@ struct ChatCustomizationParameters {
     var messageMenuLongPressMinimumDuration: Double = 0.18
     var contentInsets: UIEdgeInsets = .zero
     var followNewestThreshold: CGFloat = 1
+    var followNewestScreens: CGFloat = 0
 
     var scrollToParams: ScrollToParams?
     var onContentOffsetChange: ((CGFloat) -> Void)? // Internal → External

@@ -152,6 +152,13 @@ public extension ChatView {
         return view
     }
 
+    /// Same as `followNewestMessages(within:)`, measured in list heights (1 = one screen of scrolling).
+    func followNewestMessages(withinScreens screens: CGFloat) -> ChatView {
+        var view = self
+        view.chatCustomizationParameters.followNewestScreens = max(0, screens)
+        return view
+    }
+
     /// scroll to message by id
     func scrollTo(_ scrollToParams: ScrollToParams?) -> ChatView {
         var view = self
