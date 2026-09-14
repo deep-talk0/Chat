@@ -108,7 +108,8 @@ struct UIList<MessageContent: View>: UIViewRepresentable {
                         || context.coordinator.sections.isEmpty
                         || pendingScrollTo != nil { // if we're gonna scroll later, then update cells without animation, and animate scrolling later
                         updateTableNoAnimation(tableView, context.coordinator)
-                    } else if animationMode == .natural, tableView.contentOffset == .zero {
+                    } else if animationMode == .natural, shouldFollowNewest(tableView) {
+                        await slideToNewestEdge(tableView)
                         await updateTableWithAnimation(tableView, context.coordinator)
                     } else {
                         // if transaction.animationMode == .keepStable
@@ -147,6 +148,36 @@ struct UIList<MessageContent: View>: UIViewRepresentable {
         }
     }
 
+    // MARK: follow newest
+
+    /// Whether an arrival should animate in at the newest edge instead of keeping the visible row.
+    /// The newest edge is `-adjustedContentInset.top`, not zero: comparing against `.zero` silently
+    /// disabled animated inserts whenever content insets were set.
+    @MainActor
+    private func shouldFollowNewest(_ tableView: UITableView) -> Bool {
+        guard type == .conversation else { return tableView.contentOffset == .zero }
+        let distance = tableView.contentOffset.y + tableView.adjustedContentInset.top
+        if distance <= 1 { return true }
+        return distance <= chatParams.followNewestThreshold
+            && !tableView.isDragging
+            && !tableView.isDecelerating
+    }
+
+    /// Close the small gap to the newest edge first, so the insert that follows animates in place.
+    @MainActor
+    private func slideToNewestEdge(_ tableView: UITableView) async {
+        guard type == .conversation else { return }
+        let edge = -tableView.adjustedContentInset.top
+        guard tableView.contentOffset.y > edge + 1 else { return }
+        await withCheckedContinuation { continuation in
+            UIView.animate(withDuration: 0.2, delay: 0, options: [.curveEaseOut, .allowUserInteraction]) {
+                tableView.setContentOffset(CGPoint(x: 0, y: edge), animated: false)
+            } completion: { _ in
+                continuation.resume()
+            }
+        }
+    }
+
     // MARK: scroll to
 
     func performScrollTo(_ tableView: UITableView, scrollToParams: ScrollToParams) {
@@ -156,7 +187,7 @@ struct UIList<MessageContent: View>: UIViewRepresentable {
         case .tableOffset(let offset):
             tableView.setContentOffset(CGPoint(x: 0, y: offset), animated: false)
         case .newestMessage:
-            tableView.setContentOffset(CGPoint(x: 0, y: 0), animated: false)
+            tableView.setContentOffset(CGPoint(x: 0, y: -tableView.adjustedContentInset.top), animated: false)
         case .oldestMessage:
             let lastSection = max(tableView.numberOfSections - 1, 0)
             let lastRow = max(tableView.numberOfRows(inSection: lastSection) - 1, 0)

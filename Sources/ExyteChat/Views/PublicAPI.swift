@@ -144,6 +144,14 @@ public extension ChatView {
         return view
     }
 
+    /// Distance (pt) from the newest message within which an arrival first slides the list to the
+    /// newest edge and then animates in. Farther away the visible position is kept.
+    func followNewestMessages(within threshold: CGFloat) -> ChatView {
+        var view = self
+        view.chatCustomizationParameters.followNewestThreshold = max(1, threshold)
+        return view
+    }
+
     /// scroll to message by id
     func scrollTo(_ scrollToParams: ScrollToParams?) -> ChatView {
         var view = self
