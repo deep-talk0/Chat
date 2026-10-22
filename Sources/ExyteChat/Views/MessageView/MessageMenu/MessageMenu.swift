@@ -185,7 +185,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
         .background(
             ZStack {
                 Rectangle()
-                    .foregroundStyle(.ultraThinMaterial)
+                    .foregroundStyle(Color.black.opacity(0.16))
                 Rectangle()
                     .fill(.primary.opacity(0.1))
             }
@@ -216,20 +216,38 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
                 transitionViewState(to: .keyboard)
             }
         }
-        .alert(pendingDestructiveAction?.title() ?? "Delete", isPresented: $showDestructiveAlert) {
-            Button(pendingDestructiveAction?.title() ?? "Delete", role: .destructive) {
-                if let action = pendingDestructiveAction {
-                    onAction(action)
-                } else {
-                    deleteClosure?(message)
+        .overlay {
+            if showDestructiveAlert {
+                ZStack {
+                    Color.black.opacity(0.2).ignoresSafeArea()
+                    VStack(spacing: 16) {
+                        Text(pendingDestructiveAction?.title() ?? "Delete")
+                            .font(.headline).foregroundStyle(theme.colors.menuText)
+                        Button(role: .destructive) {
+                            if let action = pendingDestructiveAction { onAction(action) }
+                            else { deleteClosure?(message) }
+                            pendingDestructiveAction = nil
+                            showDestructiveAlert = false
+                            dismissSelf()
+                        } label: {
+                            Text(pendingDestructiveAction?.title() ?? "Delete")
+                                .frame(maxWidth: .infinity, minHeight: 44)
+                                .foregroundStyle(theme.colors.menuTextDelete)
+                        }
+                        Button("Cancel", role: .cancel) {
+                            pendingDestructiveAction = nil; showDestructiveAlert = false
+                        }
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .foregroundStyle(theme.colors.menuText)
+                    }
+                    .buttonStyle(.plain).padding(24)
+                    .background(theme.colors.menuBG, in: RoundedRectangle(cornerRadius: 18))
+                    .padding(.horizontal, 36)
                 }
-                pendingDestructiveAction = nil
-                dismissSelf()
-            }
-            Button("Cancel", role: .cancel) {
-                pendingDestructiveAction = nil
+                .accessibilityAddTraits(.isModal)
             }
         }
+
     }
     
     @MainActor
