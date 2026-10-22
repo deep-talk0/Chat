@@ -219,7 +219,7 @@ struct MessageMenu<MainButton: View, ActionEnum: MessageMenuAction>: View {
         .overlay {
             if showDestructiveAlert {
                 ZStack {
-                    Color.black.opacity(0.2).ignoresSafeArea()
+                    Color.black.opacity(0.2).ignoresSafeArea().onTapGesture {}
                     VStack(spacing: 16) {
                         Text(pendingDestructiveAction?.title() ?? "Delete")
                             .font(.headline).foregroundStyle(theme.colors.menuText)
